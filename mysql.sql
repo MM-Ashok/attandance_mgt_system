@@ -1,8 +1,6 @@
 -- phpMyAdmin SQL Dump
 -- version 1.0.0
 -- https://www.phpmyadmin.net/
---
--- Generation Time: Jun 06, 2022 at 09:57 PM
 
 -- Database: `attendancemsystem`
 
