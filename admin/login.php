@@ -1,6 +1,12 @@
 <?php
+// Enable all error reporting
+error_reporting(E_ALL);
+
+// Display errors on the page (good for development, disable on production)
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
 session_start();
-if (isset($_SESSION['user_id']) && $_SESSION['role'] == 'admin') {
+if (isset($_SESSION['user_id']) && $_SESSION['username'] == 'admin') {
     // If already logged in, redirect to dashboard
     header("Location: dashboard.php");
     exit();
@@ -13,16 +19,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $password = $_POST['password'];
 
     // Prepare query to check admin login
-    $query = "SELECT * FROM users WHERE username = ? AND role = 'admin'";
+    $query = "SELECT * FROM miraiadmin WHERE username = 'admin'";
     $stmt = $conn->prepare($query);
-    $stmt->bind_param("s", $username);
     $stmt->execute();
     $result = $stmt->get_result();
     $user = $result->fetch_assoc();
 
     if ($user && password_verify($password, $user['password'])) {
         $_SESSION['user_id'] = $user['id'];
-        $_SESSION['role'] = 'admin';
+        $_SESSION['username'] = 'admin';
         header("Location: dashboard.php");
         exit();
     } else {
