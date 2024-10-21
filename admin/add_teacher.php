@@ -12,7 +12,19 @@ if (!isset($_SESSION['user_id']) || $_SESSION['username'] != 'admin') {
 
 include '../include/db_connection.php';
 
+// Handle delete request
+if (isset($_GET['delete_id'])) {
+    $deleteId = $_GET['delete_id'];
+    $deleteQuery = "DELETE FROM miraiteachers WHERE Id = ?";
+    $deleteStmt = $conn->prepare($deleteQuery);
+    $deleteStmt->bind_param("i", $deleteId);
+    $deleteStmt->execute();
+    header("Location: add_teacher.php"); // Redirect back to the same page after deletion
+    exit();
+}
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    // Add new teacher logic remains unchanged
     $firstName = $_POST['firstName'];
     $lastName = $_POST['lastName'];
     $emailAddress = $_POST['emailAddress'];
@@ -47,8 +59,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 $classQuery = "SELECT * FROM miraiclass";
 $classResult = $conn->query($classQuery);
 
-// Fetch all teachers
-$query = "SELECT * FROM miraiteachers";
+// Fetch all teachers with class names
+$query = "SELECT t.*, c.className FROM miraiteachers t LEFT JOIN miraiclass c ON t.classId = c.ID";
 $result = $conn->query($query);
 ?>
 
@@ -114,8 +126,9 @@ $result = $conn->query($query);
                         <th class="py-2 px-4 border">Last Name</th>
                         <th class="py-2 px-4 border">Email Address</th>
                         <th class="py-2 px-4 border">Phone Number</th>
-                        <th class="py-2 px-4 border">Class ID</th>
+                        <th class="py-2 px-4 border">Class Name</th> <!-- Changed from Class ID to Class Name -->
                         <th class="py-2 px-4 border">Created At</th>
+                        <th class="py-2 px-4 border">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -126,8 +139,16 @@ $result = $conn->query($query);
                             <td class="py-2 px-4 border"><?php echo $teacher['lastName']; ?></td>
                             <td class="py-2 px-4 border"><?php echo $teacher['emailAddress']; ?></td>
                             <td class="py-2 px-4 border"><?php echo $teacher['phoneNo']; ?></td>
-                            <td class="py-2 px-4 border"><?php echo $teacher['classId']; ?></td>
+                            <td class="py-2 px-4 border"><?php echo $teacher['className']; ?></td> <!-- Display Class Name -->
                             <td class="py-2 px-4 border"><?php echo $teacher['created_at']; ?></td>
+                            <td class="py-2 px-4 border flex space-x-2">
+                                <a href="edit_teacher.php?id=<?php echo $teacher['Id']; ?>" class="text-blue-500 hover:underline">
+                                    <i class="fas fa-edit"></i> Edit
+                                </a>
+                                <a href="?delete_id=<?php echo $teacher['Id']; ?>" class="text-red-500 hover:underline" onclick="return confirm('Are you sure you want to delete this teacher?');">
+                                    <i class="fas fa-trash"></i> Delete
+                                </a>
+                            </td>
                         </tr>
                     <?php endwhile; ?>
                 </tbody>
