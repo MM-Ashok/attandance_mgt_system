@@ -40,15 +40,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Get the posted data
     $firstName = $_POST['firstName'];
     $lastName = $_POST['lastName'];
-    $otherName = $_POST['otherName'];
     $emailAddress = $_POST['emailAddress'];
+    $otherName = $_POST['otherName'];
     $admissionNumber = $_POST['admissionNumber'];
     $classId = $_POST['classId'];
 
     // Update student details
-    $updateQuery = "UPDATE miraistudent SET firstName = ?, lastName = ?, otherName = ?, emailAddress = ?, admissionNumber = ?, class_id = ? WHERE id = ?";
+    $updateQuery = "UPDATE miraistudent SET firstName = ?, lastName = ?, emailAddress = ?, otherName = ?, admissionNumber = ?, class_id = ? WHERE id = ?";
     $updateStmt = $conn->prepare($updateQuery);
-    $updateStmt->bind_param("ssssiii", $firstName, $lastName, $otherName, $emailAddress, $admissionNumber, $classId, $studentId);
+    $updateStmt->bind_param("sssssii", $firstName, $lastName, $emailAddress, $otherName, $admissionNumber, $classId, $studentId);
+
+    //$updateStmt->bind_param("sssssii", $firstName, $lastName, $emailAddress, $otherName,  $admissionNumber, $classId );
 
     if ($updateStmt->execute()) {
         $success = "Student updated successfully!";
