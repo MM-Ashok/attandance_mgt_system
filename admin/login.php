@@ -5,8 +5,16 @@ error_reporting(E_ALL);
 // Display errors on the page (good for development, disable on production)
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
+
+// Set a custom session name for admin
+//session_name('admin_session');
 session_start();
+// Debugging output to see current session variables
+
+
 if (isset($_SESSION['user_id']) && $_SESSION['username'] == 'admin') {
+    echo "Already logged in as admin. Redirecting to dashboard...";
+
     // If already logged in, redirect to dashboard
     header("Location: dashboard.php");
     exit();
@@ -26,6 +34,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $user = $result->fetch_assoc();
 
     if ($user && password_verify($password, $user['password'])) {
+        // Clear any existing session variables before starting a new session
+
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['username'] = 'admin';
         header("Location: dashboard.php");
