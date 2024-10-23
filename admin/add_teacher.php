@@ -15,22 +15,31 @@ include '../include/db_connection.php';
 // Handle delete request
 if (isset($_GET['delete_id'])) {
     $deleteId = $_GET['delete_id'];
-    $deleteQuery = "DELETE FROM miraiteachers WHERE Id = ?";
-    $deleteStmt = $conn->prepare($deleteQuery);
-    $deleteStmt->bind_param("i", $deleteId);
-    $deleteStmt->execute();
+
+    // Delete from miraiteacherclasses first
+    $deleteClassesQuery = "DELETE FROM miraiteacherclasses WHERE teacher_id = ?";
+    $deleteClassesStmt = $conn->prepare($deleteClassesQuery);
+    $deleteClassesStmt->bind_param("i", $deleteId);
+    $deleteClassesStmt->execute();
+
+    // Then delete from miraiteachers
+    $deleteTeacherQuery = "DELETE FROM miraiteachers WHERE Id = ?";
+    $deleteTeacherStmt = $conn->prepare($deleteTeacherQuery);
+    $deleteTeacherStmt->bind_param("i", $deleteId);
+    $deleteTeacherStmt->execute();
+
     header("Location: add_teacher.php"); // Redirect back to the same page after deletion
     exit();
 }
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    // Add new teacher logic remains unchanged
+    // Add new teacher logic
     $firstName = $_POST['firstName'];
     $lastName = $_POST['lastName'];
     $emailAddress = $_POST['emailAddress'];
     $password = password_hash($_POST['password'], PASSWORD_DEFAULT); // Hash the password
     $phoneNo = $_POST['phoneNo'];
-    $classId = $_POST['classId'];
+    $classIds = isset($_POST['classId']) ? $_POST['classId'] : [];
 
     // Check if email already exists
     $checkEmailQuery = "SELECT * FROM miraiteachers WHERE emailAddress = ?";
@@ -42,15 +51,26 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if ($checkEmailResult->num_rows > 0) {
         $error = "Email address already exists. Please use a different email.";
     } else {
-        // Prepare and bind for insertion
-        $query = "INSERT INTO miraiteachers (firstName, lastName, emailAddress, password, phoneNo, classId) VALUES (?, ?, ?, ?, ?, ?)";
-        $stmt = $conn->prepare($query);
-        $stmt->bind_param("ssssss", $firstName, $lastName, $emailAddress, $password, $phoneNo, $classId);
+        // Insert into miraiteachers
+        $insertTeacherQuery = "INSERT INTO miraiteachers (firstName, lastName, emailAddress, password, phoneNo) VALUES (?, ?, ?, ?, ?)";
+        $insertTeacherStmt = $conn->prepare($insertTeacherQuery);
+        $insertTeacherStmt->bind_param("sssss", $firstName, $lastName, $emailAddress, $password, $phoneNo);
 
-        if ($stmt->execute()) {
+        if ($insertTeacherStmt->execute()) {
+            // Get the last inserted teacher ID
+            $teacherId = $conn->insert_id;
+
+            // Insert into miraiteacherclasses for each selected class
+            foreach ($classIds as $classId) {
+                $insertClassQuery = "INSERT INTO miraiteacherclasses (teacher_id, class_id) VALUES (?, ?)";
+                $insertClassStmt = $conn->prepare($insertClassQuery);
+                $insertClassStmt->bind_param("ii", $teacherId, $classId);
+                $insertClassStmt->execute();
+            }
+
             $success = "Teacher added successfully!";
         } else {
-            $error = "Error adding teacher: " . $stmt->error;
+            $error = "Error adding teacher: " . $insertTeacherStmt->error;
         }
     }
 }
@@ -59,8 +79,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 $classQuery = "SELECT * FROM miraiclass";
 $classResult = $conn->query($classQuery);
 
-// Fetch all teachers with class names
-$query = "SELECT t.*, c.className FROM miraiteachers t LEFT JOIN miraiclass c ON t.classId = c.ID";
+// Fetch all teachers with associated class names
+$query = "
+    SELECT t.*, GROUP_CONCAT(c.className SEPARATOR ', ') as classNames
+    FROM miraiteachers t
+    LEFT JOIN miraiteacherclasses tc ON t.Id = tc.teacher_id
+    LEFT JOIN miraiclass c ON tc.class_id = c.ID
+    GROUP BY t.Id
+";
 $result = $conn->query($query);
 ?>
 
@@ -96,8 +122,8 @@ $result = $conn->query($query);
                     <input type="text" id="phoneNo" name="phoneNo" required class="w-full p-2 border border-gray-300 rounded">
                 </div>
                 <div>
-                    <label for="classId" class="block text-gray-700">Select Class</label>
-                    <select id="classId" name="classId" required class="w-full p-2 border border-gray-300 rounded">
+                    <label for="classId" class="block text-gray-700">Select Classes</label>
+                    <select id="classId" name="classId[]" multiple required class="w-full p-2 border border-gray-300 rounded">
                         <option value="">Select a Class</option>
                         <?php while ($class = $classResult->fetch_assoc()): ?>
                             <option value="<?php echo $class['ID']; ?>"><?php echo $class['className']; ?></option>
@@ -126,7 +152,7 @@ $result = $conn->query($query);
                         <th class="py-2 px-4 border">Last Name</th>
                         <th class="py-2 px-4 border">Email Address</th>
                         <th class="py-2 px-4 border">Phone Number</th>
-                        <th class="py-2 px-4 border">Class Name</th> <!-- Changed from Class ID to Class Name -->
+                        <th class="py-2 px-4 border">Classes</th> <!-- Changed to show Class Names -->
                         <th class="py-2 px-4 border">Created At</th>
                         <th class="py-2 px-4 border">Actions</th>
                     </tr>
@@ -139,14 +165,14 @@ $result = $conn->query($query);
                             <td class="py-2 px-4 border"><?php echo $teacher['lastName']; ?></td>
                             <td class="py-2 px-4 border"><?php echo $teacher['emailAddress']; ?></td>
                             <td class="py-2 px-4 border"><?php echo $teacher['phoneNo']; ?></td>
-                            <td class="py-2 px-4 border"><?php echo $teacher['className']; ?></td> <!-- Display Class Name -->
+                            <td class="py-2 px-4 border"><?php echo $teacher['classNames']; ?></td> <!-- Show associated class names -->
                             <td class="py-2 px-4 border"><?php echo $teacher['created_at']; ?></td>
                             <td class="py-2 px-4 border flex space-x-2">
                                 <a href="edit_teacher.php?id=<?php echo $teacher['Id']; ?>" class="text-blue-500 hover:underline">
                                     <i class="fas fa-edit"></i> Edit
                                 </a>
                                 <a href="?delete_id=<?php echo $teacher['Id']; ?>" class="text-red-500 hover:underline" onclick="return confirm('Are you sure you want to delete this teacher?');">
-                                    <i class="fas fa-trash"></i> Delete
+                                    <i class="fas fa-trash-alt"></i> Delete
                                 </a>
                             </td>
                         </tr>
@@ -154,7 +180,7 @@ $result = $conn->query($query);
                 </tbody>
             </table>
         </div>
-
     </div>
 </div>
+
 <?php include '../include/footer.php'; ?>

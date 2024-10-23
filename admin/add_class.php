@@ -12,6 +12,20 @@ if (!isset($_SESSION['user_id']) || $_SESSION['username'] != 'admin') {
 
 include '../include/db_connection.php';
 
+// Handle delete request
+if (isset($_GET['delete_id'])) {
+    $deleteId = $_GET['delete_id'];
+
+    // Delete from miraiteacherclasses first
+    $deleteClasses = "DELETE FROM miraiclass WHERE ID = ?";
+    $deleteClassesStmt = $conn->prepare($deleteClasses);
+    $deleteClassesStmt->bind_param("i", $deleteId);
+    $deleteClassesStmt->execute();
+
+    header("Location: add_class.php"); // Redirect back to the same page after deletion
+    exit();
+}
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $className = $_POST['className'];
 
@@ -76,6 +90,7 @@ $result = $conn->query($query);
                     <th class="py-2 px-4 border">ID</th>
                     <th class="py-2 px-4 border">Class Name</th>
                     <th class="py-2 px-4 border">Created At</th>
+                    <th class="py-2 px-4 border">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -84,6 +99,14 @@ $result = $conn->query($query);
                         <td class="py-2 px-4 border"><?php echo $class['ID']; ?></td>
                         <td class="py-2 px-4 border"><?php echo $class['className']; ?></td>
                         <td class="py-2 px-4 border"><?php echo $class['created_at']; ?></td>
+                        <td class="py-2 px-4 border flex space-x-2">
+                            <a href="edit_class.php?id=<?php echo $class['ID']; ?>" class="text-blue-500 hover:underline">
+                                <i class="fas fa-edit"></i> Edit
+                            </a>
+                            <a href="?delete_id=<?php echo $class['ID']; ?>" class="text-red-500 hover:underline" onclick="return confirm('Are you sure you want to delete this Class?');">
+                                <i class="fas fa-trash-alt"></i> Delete
+                            </a>
+                        </td>
                     </tr>
                 <?php endwhile; ?>
             </tbody>

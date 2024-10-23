@@ -29,6 +29,17 @@ if (isset($_GET['id'])) {
     }
 
     $teacher = $result->fetch_assoc();
+
+    // Fetch existing classes for the teacher
+    $classQuery = "SELECT class_id FROM miraiteacherclasses WHERE teacher_id = ?";
+    $classStmt = $conn->prepare($classQuery);
+    $classStmt->bind_param("i", $teacherId);
+    $classStmt->execute();
+    $classResult = $classStmt->get_result();
+    $existingClasses = [];
+    while ($row = $classResult->fetch_assoc()) {
+        $existingClasses[] = $row['class_id'];
+    }
 }
 
 // Handle form submission for updating teacher details
@@ -37,14 +48,30 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $lastName = $_POST['lastName'];
     $emailAddress = $_POST['emailAddress'];
     $phoneNo = $_POST['phoneNo'];
-    $classId = $_POST['classId'];
+    $classIds = isset($_POST['classId']) ? $_POST['classId'] : [];
 
     // Prepare and bind for updating the teacher details
-    $updateQuery = "UPDATE miraiteachers SET firstName = ?, lastName = ?, emailAddress = ?, phoneNo = ?, classId = ? WHERE Id = ?";
+    $updateQuery = "UPDATE miraiteachers SET firstName = ?, lastName = ?, emailAddress = ?, phoneNo = ? WHERE Id = ?";
     $updateStmt = $conn->prepare($updateQuery);
-    $updateStmt->bind_param("sssssi", $firstName, $lastName, $emailAddress, $phoneNo, $classId, $teacherId);
+    $updateStmt->bind_param("ssssi", $firstName, $lastName, $emailAddress, $phoneNo, $teacherId);
 
     if ($updateStmt->execute()) {
+        // Remove existing class associations
+        $deleteClassesQuery = "DELETE FROM miraiteacherclasses WHERE teacher_id = ?";
+        $deleteStmt = $conn->prepare($deleteClassesQuery);
+        $deleteStmt->bind_param("i", $teacherId);
+        $deleteStmt->execute();
+
+        // Insert new class associations
+        if (!empty($classIds)) {
+            $insertClassesQuery = "INSERT INTO miraiteacherclasses (teacher_id, class_id) VALUES (?, ?)";
+            $insertStmt = $conn->prepare($insertClassesQuery);
+            foreach ($classIds as $classId) {
+                $insertStmt->bind_param("ii", $teacherId, $classId);
+                $insertStmt->execute();
+            }
+        }
+
         $success = "Teacher details updated successfully!";
         header("Location: add_teacher.php"); // Redirect back to the teachers list
         exit();
@@ -86,11 +113,10 @@ $classResult = $conn->query($classQuery);
                     <input type="text" id="phoneNo" name="phoneNo" value="<?php echo htmlspecialchars($teacher['phoneNo']); ?>" required class="w-full p-2 border border-gray-300 rounded">
                 </div>
                 <div>
-                    <label for="classId" class="block text-gray-700">Select Class</label>
-                    <select id="classId" name="classId" required class="w-full p-2 border border-gray-300 rounded">
-                        <option value="">Select a Class</option>
+                    <label for="classId" class="block text-gray-700">Select Classes</label>
+                    <select id="classId" name="classId[]" multiple required class="select2 w-full p-2 border border-gray-300 rounded">
                         <?php while ($class = $classResult->fetch_assoc()): ?>
-                            <option value="<?php echo $class['ID']; ?>" <?php echo ($class['ID'] == $teacher['classId']) ? 'selected' : ''; ?>>
+                            <option value="<?php echo $class['ID']; ?>" <?php echo in_array($class['ID'], $existingClasses) ? 'selected' : ''; ?>>
                                 <?php echo htmlspecialchars($class['className']); ?>
                             </option>
                         <?php endwhile; ?>
