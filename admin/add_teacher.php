@@ -144,7 +144,7 @@ $result = $conn->query($query);
 
         <h2 class="text-2xl text-center mt-10">All Teachers</h2>
         <div class="overflow-x-auto mt-4">
-            <table class="min-w-full bg-white">
+            <table id="teacherTable" class="min-w-full bg-white">
                 <thead>
                     <tr>
                         <th class="py-2 px-4 border">ID</th>

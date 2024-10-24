@@ -4,7 +4,7 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
 ?>
-<aside id="sidebar" class="w-64 h-screen bg-gray-800 text-white hidden md:block">
+<aside id="sidebar" class="w-64 bg-gray-800 text-white hidden md:block">
 
             <?php if (isset($_SESSION['username']) && $_SESSION['username'] === 'admin'): ?>
                 <div class="p-6">
