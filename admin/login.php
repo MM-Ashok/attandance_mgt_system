@@ -38,6 +38,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['username'] = 'admin';
+        $_SESSION['profile_image'] = $user['profile_image'] ?? '/path/to/default/image.jpg'; // add default if null
+        $_SESSION['email'] = $user['email'] ?? ''; // make sure email is not empty
         header("Location: dashboard.php");
         exit();
     } else {

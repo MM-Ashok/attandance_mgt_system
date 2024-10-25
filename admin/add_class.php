@@ -84,7 +84,7 @@ $result = $conn->query($query);
 
     <h2 class="text-2xl text-center mt-10">All Classes</h2>
     <div class="overflow-x-auto mt-4">
-        <table class="min-w-full bg-white">
+        <table id="classesTable" class="min-w-full bg-white">
             <thead>
                 <tr>
                     <th class="py-2 px-4 border">ID</th>
@@ -102,9 +102,6 @@ $result = $conn->query($query);
                         <td class="py-2 px-4 border flex space-x-2">
                             <a href="edit_class.php?id=<?php echo $class['ID']; ?>" class="text-blue-500 hover:underline">
                                 <i class="fas fa-edit"></i> Edit
-                            </a>
-                            <a href="?delete_id=<?php echo $class['ID']; ?>" class="text-red-500 hover:underline" onclick="return confirm('Are you sure you want to delete this Class?');">
-                                <i class="fas fa-trash-alt"></i> Delete
                             </a>
                         </td>
                     </tr>

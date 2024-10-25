@@ -33,22 +33,34 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $emailAddress = $_POST['emailAddress'];
     $otherName = $_POST['otherName'];
     $admissionNumber = $_POST['admissionNumber'];
+    $phoneNo = $_POST['phoneNo']; // Get phone number
+    $passWord = password_hash($_POST['passWord'], PASSWORD_DEFAULT); // Hash the password before saving
     $classId = isset($_POST['classId']) ? $_POST['classId'] : null;
 
-    // Check if email already exists
-    $checkEmailQuery = "SELECT * FROM miraistudent WHERE emailAddress = ?";
-    $checkEmailStmt = $conn->prepare($checkEmailQuery);
-    $checkEmailStmt->bind_param("s", $emailAddress);
-    $checkEmailStmt->execute();
-    $checkEmailResult = $checkEmailStmt->get_result();
+    // Check if email or phone number already exists
+    //$checkQuery = "SELECT * FROM miraistudent WHERE emailAddress = ? OR phoneNo = ?";
+    $checkQuery = "SELECT * FROM miraistudent WHERE emailAddress = ? OR phoneNo = ? OR (admissionNumber = ? AND class_id = ?)";
+    $checkStmt = $conn->prepare($checkQuery);
+    $checkStmt->bind_param("sssi", $emailAddress, $phoneNo, $admissionNumber, $classId);
+    $checkStmt->execute();
+    $checkResult = $checkStmt->get_result();
 
-    if ($checkEmailResult->num_rows > 0) {
-        $error = "Email address already exists. Please use a different email.";
+    if ($checkResult->num_rows > 0) {
+        $existingData = $checkResult->fetch_assoc();
+        if ($existingData['emailAddress'] == $emailAddress) {
+            $error = "Email address already exists. Please use a different email.";
+        }
+        elseif ($existingData['admissionNumber'] == $admissionNumber && $existingData['class_id'] == $classId) {
+            $error = "The admission number already exists for the selected class. Please use a different admission number.";
+        }
+        //elseif ($existingData['phoneNo'] == $phoneNo) {
+        //     $error = "Phone number already exists. Please use a different phone number.";
+        // }
     } else {
         // Insert into miraistudent with class ID
-        $insertStudentQuery = "INSERT INTO miraistudent (firstName, lastName, emailAddress, otherName, admissionNumber, class_id) VALUES (?, ?, ?, ?, ?, ?)";
+        $insertStudentQuery = "INSERT INTO miraistudent (firstName, lastName, emailAddress, otherName, admissionNumber, passWord, phoneNo, class_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         $insertStudentStmt = $conn->prepare($insertStudentQuery);
-        $insertStudentStmt->bind_param("sssssi", $firstName, $lastName, $emailAddress, $otherName, $admissionNumber, $classId);
+        $insertStudentStmt->bind_param("sssssssi", $firstName, $lastName, $emailAddress, $otherName, $admissionNumber, $passWord, $phoneNo, $classId);
 
         if ($insertStudentStmt->execute()) {
             $success = "Student added successfully!";
@@ -57,6 +69,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
     }
 }
+
 
 // Fetch all classes for the dropdown
 $classQuery = "SELECT * FROM miraiclass";
@@ -103,6 +116,14 @@ $result = $conn->query($query);
                     <input type="text" id="admissionNumber" name="admissionNumber" required class="w-full p-2 border border-gray-300 rounded">
                 </div>
                 <div>
+                    <label for="phoneNo" class="block text-gray-700">Phone Number</label>
+                    <input type="text" id="phoneNo" name="phoneNo" required class="w-full p-2 border border-gray-300 rounded">
+                </div>
+                <div>
+                    <label for="passWord" class="block text-gray-700">Password</label>
+                    <input type="password" id="passWord" name="passWord" required class="w-full p-2 border border-gray-300 rounded">
+                </div>
+                <div>
                     <label for="classId" class="block text-gray-700">Select Class</label>
                     <select id="classId" name="classId" required class="w-full p-2 border border-gray-300 rounded">
                         <option value="">Select a Class</option>
@@ -123,9 +144,8 @@ $result = $conn->query($query);
             </div>
         </form>
 
-        <h2 class="text-2xl text-center mt-10">All Students</h2>
         <div class="overflow-x-auto mt-4">
-            <table class="min-w-full bg-white">
+            <table id="studentsTable" class="min-w-full bg-white">
                 <thead>
                     <tr>
                         <th class="py-2 px-4 border">ID</th>
@@ -154,8 +174,9 @@ $result = $conn->query($query);
                                 <a href="edit_student.php?id=<?php echo $student['id']; ?>" class="text-blue-500 hover:underline">
                                     <i class="fas fa-edit"></i> Edit
                                 </a>
-                                <a href="add_student.php?delete_id=<?php echo $student['id']; ?>" class="text-red-500 hover:underline">
-                                    <i class="fas fa-trash"></i> Delete
+
+                                <a href="add_student.php?delete_id=<?php echo $student['id']; ?>" class="text-red-500 hover:underline" onclick="return confirm('Are you sure you want to delete this student?');">
+                                    <i class="fas fa-trash-alt"></i> Delete
                                 </a>
                             </td>
                         </tr>

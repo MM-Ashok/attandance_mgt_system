@@ -2,6 +2,29 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start(); // Start the session if it hasn't been started already
 }
+
+// Include database connection
+include '../include/db_connection.php';
+
+// Default profile picture for teacher
+$profilePicture = "/student-attendance-system/uploads/dummyImage.webp"; // Fallback image
+
+// Fetch teacher's profile image if logged in as a teacher
+if (isset($_SESSION['teacher_id'])) {
+    $teacher_id = $_SESSION['teacher_id'];
+    $query = "SELECT profile_image FROM miraiteachers WHERE id = ?";
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("i", $teacher_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    if ($row = $result->fetch_assoc()) {
+        if (!empty($row['profile_image'])) {
+            $profilePicture = $row['profile_image'];
+        }
+    }
+    $stmt->close();
+}
+
 ?>
 
 <!DOCTYPE html>
@@ -14,10 +37,11 @@ if (session_status() === PHP_SESSION_NONE) {
     <?php if (isset($_SESSION['teacher_id'])): ?>
        <link href="/student-attendance-system/assets/teacher/css/style.css" rel="stylesheet">
     <?php endif; ?>
+    <?php if (isset($_SESSION['username']) && $_SESSION['username'] === 'admin'): ?>
+        <link href="/student-attendance-system/assets/admin/css/style.css" rel="stylesheet">
+    <?php endif; ?>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <!-- Include Select2 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <!-- Include Select2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
@@ -28,6 +52,7 @@ if (session_status() === PHP_SESSION_NONE) {
         }
     </script>
 </head>
+
 <body class="bg-gray-100">
     <!-- Header -->
     <header class="bg-gray-800 text-white p-4 shadow-md">
@@ -35,19 +60,21 @@ if (session_status() === PHP_SESSION_NONE) {
             <h1 class="text-xl font-bold">Student Attendance Management System</h1>
 
             <!-- Profile Section -->
-            <?php if (isset($_SESSION['user_id']) || isset($_SESSION['teacher_id'])): // Check if user is logged in ?>
                 <div class="relative">
                     <div class="flex items-center cursor-pointer" onclick="toggleDropdown()">
                         <!-- Profile picture -->
-                        <img src="/student-attendance-system/assets/img/profile_male.png" alt="Profile" class="w-8 h-8 rounded-full mr-2">
-
+                        <?php if (isset($_SESSION['username']) && $_SESSION['username'] === 'admin'): ?>
+                           <img src="http://localhost/student-attendance-system/uploads/<?php echo $_SESSION['profile_image'];?>" alt="Profile" class="w-8 h-8 rounded-full mr-2">
+                        <?php endif; ?>
+                        <?php if (isset($_SESSION['teacher_id'])): ?>
+                           <img src="http://localhost/student-attendance-system/uploads/<?php echo $profilePicture; ?>" alt="Profile" class="w-8 h-8 rounded-full mr-2">
+                        <?php endif; ?>
                         <!-- Display user name -->
                         <?php if (isset($_SESSION['username']) && $_SESSION['username'] === 'admin'): ?>
-                            <span>Admin</span>
-                            <?php elseif (isset($_SESSION['firstName']) && isset($_SESSION['lastName'])): ?>
-                                <span><?php echo $_SESSION['firstName'] . ' ' . $_SESSION['lastName']; ?></span>
-                            <?php endif; ?>
-
+                            <span><?php echo isset($_SESSION['email']) ? htmlspecialchars($_SESSION['email']) : 'Email not available'; ?></span>
+                        <?php elseif (isset($_SESSION['firstName']) && isset($_SESSION['lastName'])): ?>
+                            <span><?php echo $_SESSION['firstName'] . ' ' . $_SESSION['lastName']; ?></span>
+                        <?php endif; ?>
                     </div>
 
                     <!-- Dropdown menu -->
@@ -69,7 +96,6 @@ if (session_status() === PHP_SESSION_NONE) {
                         <?php endif; ?>
                     </div>
                 </div>
-            <?php endif; ?>
         </div>
     </header>
 </body>

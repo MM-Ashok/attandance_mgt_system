@@ -4,7 +4,7 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
 ?>
-<aside id="sidebar" class="w-64 h-screen bg-gray-800 text-white hidden md:block">
+<aside id="sidebar" class="w-64 bg-gray-800 text-white hidden md:block">
 
             <?php if (isset($_SESSION['username']) && $_SESSION['username'] === 'admin'): ?>
                 <div class="p-6">
@@ -38,10 +38,19 @@ ini_set('display_errors', 1);
                             <a href="/student-attendance-system/teacher/view_class_attendance.php" class="text-gray-300 hover:text-white">View Class Attendance</a>
                         </li>
                         <li class="mb-4">
-                            <a href="/student-attendance-system/teacher/view_student_attendance.php" class="text-gray-300 hover:text-white">View Student Attendance</a>
+                            <a href="/student-attendance-system/teacher/viewStudentAttendance.php" class="text-gray-300 hover:text-white">View Student Attendance</a>
                         </li>
                         <li class="mb-4">
-                            <a href="/student-attendance-system/teacher/xls_report.php" class="text-gray-300 hover:text-white">Today's Report (xls)</a>
+                            <a href="/student-attendance-system/teacher/downloadRecord.php" class="text-gray-300 hover:text-white">Today's Report (xls)</a>
+                        </li>
+                    </ul>
+                </div>
+            <?php elseif (isset($_SESSION['student_id'])): ?>
+                <div class="p-6">
+                    <h2 class="text-lg font-bold">Student Menu</h2>
+                    <ul class="mt-6">
+                       <li class="mb-4">
+                            <a href="/student-attendance-system/student/dashboard.php" class="text-gray-300 hover:text-white">Dashboard</a>
                         </li>
                     </ul>
                 </div>

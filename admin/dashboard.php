@@ -21,6 +21,11 @@ $totalTeachers = $totalTeachersResult->fetch_assoc()['total'];
 $totalClassesQuery = "SELECT COUNT(*) as total FROM miraiclass";
 $totalClassesResult = $conn->query($totalClassesQuery);
 $totalClasses = $totalClassesResult->fetch_assoc()['total'];
+
+// Fetch total number of Student
+$totalStudentsQuery = "SELECT COUNT(*) as total FROM miraistudent";
+$totalStudentsResult = $conn->query($totalStudentsQuery);
+$totalStudents = $totalStudentsResult->fetch_assoc()['total'];
 ?>
 
 <?php include '../include/header.php'; ?>
@@ -53,11 +58,10 @@ $totalClasses = $totalClassesResult->fetch_assoc()['total'];
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 4a4 4 0 00-4 4v2H4v6h2a8 8 0 0016 0h2v-6h-6V8a4 4 0 00-4-4zM8 8a4 4 0 118 0" />
                 </svg>
-
                 </div>
                 <div class="ml-4">
                     <h3 class="text-xl font-semibold">Total Students</h3>
-                    <p class="text-3xl font-bold"><?php //echo $totalStudents; ?></p>
+                    <p class="text-3xl font-bold"><?php echo $totalStudents; ?></p>
                 </div>
             </div>
 

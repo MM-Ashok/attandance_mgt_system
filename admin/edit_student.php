@@ -43,14 +43,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $emailAddress = $_POST['emailAddress'];
     $otherName = $_POST['otherName'];
     $admissionNumber = $_POST['admissionNumber'];
+    $phoneNo = $_POST['phoneNo']; // Get phone number
+    $passWord = password_hash($_POST['passWord'], PASSWORD_DEFAULT); // Hash the password before saving
     $classId = $_POST['classId'];
 
     // Update student details
-    $updateQuery = "UPDATE miraistudent SET firstName = ?, lastName = ?, emailAddress = ?, otherName = ?, admissionNumber = ?, class_id = ? WHERE id = ?";
-    $updateStmt = $conn->prepare($updateQuery);
-    $updateStmt->bind_param("sssssii", $firstName, $lastName, $emailAddress, $otherName, $admissionNumber, $classId, $studentId);
-
-    //$updateStmt->bind_param("sssssii", $firstName, $lastName, $emailAddress, $otherName,  $admissionNumber, $classId );
+    // Update student details
+$updateQuery = "UPDATE miraistudent SET firstName = ?, lastName = ?, emailAddress = ?, otherName = ?, admissionNumber = ?, passWord = ?, phoneNo = ?, class_id = ? WHERE id = ?";
+$updateStmt = $conn->prepare($updateQuery);
+$updateStmt->bind_param("ssssssssi", $firstName, $lastName, $emailAddress, $otherName, $admissionNumber, $passWord, $phoneNo, $classId, $studentId);
 
     if ($updateStmt->execute()) {
         $success = "Student updated successfully!";
@@ -95,6 +96,14 @@ $classResult = $conn->query($classQuery);
                 <div>
                     <label for="admissionNumber" class="block text-gray-700">Admission Number</label>
                     <input type="text" id="admissionNumber" name="admissionNumber" value="<?php echo $student['admissionNumber']; ?>" required class="w-full p-2 border border-gray-300 rounded">
+                </div>
+                <div>
+                    <label for="phoneNo" class="block text-gray-700">Phone Number</label>
+                    <input type="text" id="phoneNo" name="phoneNo" value="<?php echo $student['phoneNo']; ?>" required class="w-full p-2 border border-gray-300 rounded">
+                </div>
+                <div>
+                    <label for="passWord" class="block text-gray-700">Password</label>
+                    <input type="password" id="passWord" name="passWord" required class="w-full p-2 border border-gray-300 rounded">
                 </div>
                 <div>
                     <label for="classId" class="block text-gray-700">Select Class</label>
